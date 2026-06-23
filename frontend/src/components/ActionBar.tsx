@@ -1,10 +1,11 @@
 import { useState } from "react";
-
 interface ActionBarProps {
   isMyTurn: boolean;
   seen: boolean;
   canShowdown: boolean;
   activePlayers: number[];
+  pot: number;
+  currentBet: number;
   onLookCards: () => void;
   onBet: (action: string, amount?: number) => void;
   onCompare: (targetId: number) => void;
@@ -17,6 +18,8 @@ export default function ActionBar({
   seen,
   canShowdown,
   activePlayers,
+  pot,
+  currentBet,
   onLookCards,
   onBet,
   onCompare,
@@ -38,37 +41,58 @@ export default function ActionBar({
   const compareTargets = activePlayers.filter(
     (id) => id !== undefined && id !== null
   );
-
   return (
     <div className="flex flex-col items-center gap-3 py-3">
       {showRaiseInput ? (
-        <div className="flex items-center gap-2">
-          <input
-            type="number"
-            min={1}
-            value={raiseAmount ?? ""}
-            onChange={(e) => setRaiseAmount(Number(e.target.value))}
-            className="w-24 rounded border border-emerald-500 bg-emerald-700 px-3 py-2 text-white text-center focus:outline-none"
-            placeholder="金额"
-          />
-          <button
-            onClick={() => {
-              if (raiseAmount && raiseAmount > 0) {
-                onBet("raise", raiseAmount);
-                setShowRaiseInput(false);
-                setRaiseAmount(null);
-              }
-            }}
-            className="rounded bg-red-500 px-4 py-2 font-bold text-white hover:bg-red-400"
-          >
-            确认
-          </button>
-          <button
-            onClick={() => setShowRaiseInput(false)}
-            className="rounded bg-emerald-600 px-3 py-2 text-sm text-white hover:bg-emerald-500"
-          >
-            取消
-          </button>
+        <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-wrap justify-center gap-1.5">
+            {[
+              { label: "1/2 底池", getAmount: () => Math.max(1, Math.floor(pot / 2)) },
+              { label: "底池", getAmount: () => Math.max(1, pot) },
+              { label: "2x 底池", getAmount: () => Math.max(1, pot * 2) },
+              { label: "All-in", getAmount: () => 999999 },
+            ].map((shortcut) => (
+              <button
+                key={shortcut.label}
+                onClick={() => {
+                  onBet("raise", shortcut.getAmount());
+                  setShowRaiseInput(false);
+                  setRaiseAmount(null);
+                }}
+                className="rounded-lg bg-yellow-600/40 border border-yellow-500/30 px-3 py-1.5 text-xs font-bold text-yellow-200 hover:bg-yellow-600/60 hover:border-yellow-400/50 transition-all"
+              >
+                {shortcut.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={1}
+              value={raiseAmount ?? ""}
+              onChange={(e) => setRaiseAmount(Number(e.target.value))}
+              className="w-24 rounded-lg border border-emerald-500/50 bg-emerald-800/60 px-3 py-2 text-white text-center text-sm focus:outline-none focus:border-yellow-500/50"
+              placeholder="自定义"
+            />
+            <button
+              onClick={() => {
+                if (raiseAmount && raiseAmount > 0) {
+                  onBet("raise", raiseAmount);
+                  setShowRaiseInput(false);
+                  setRaiseAmount(null);
+                }
+              }}
+              className="rounded-lg bg-gradient-to-r from-red-500 to-red-600 px-4 py-2 font-bold text-white hover:from-red-400 hover:to-red-500 transition-all active:scale-95"
+            >
+              确认
+            </button>
+            <button
+              onClick={() => setShowRaiseInput(false)}
+              className="rounded-lg bg-emerald-700/60 px-3 py-2 text-sm text-emerald-200 hover:bg-emerald-600/60 transition-all"
+            >
+              取消
+            </button>
+          </div>
         </div>
       ) : showComparePicker ? (
         <div className="flex flex-wrap justify-center gap-2">

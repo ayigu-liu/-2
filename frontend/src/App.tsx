@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
+import HomePage from "./pages/HomePage";
+import ErrorBoundary from "./components/ErrorBoundary";
 import LobbyPage from "./pages/LobbyPage";
 import TablePage from "./pages/TablePage";
 import { getStoredUser } from "./api/client";
@@ -15,26 +17,31 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route
-          path="/lobby"
-          element={
-            <ProtectedRoute>
-              <LobbyPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/table/:roomId"
-          element={
-            <ProtectedRoute>
-              <TablePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="*" element={<Navigate to="/lobby" replace />} />
-      </Routes>
+      <ErrorBoundary>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/lobby"
+            element={
+              <ProtectedRoute>
+                <LobbyPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/table/:roomId"
+            element={
+              <ProtectedRoute>
+                <ErrorBoundary>
+                  <TablePage />
+                </ErrorBoundary>
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/" element={<HomePage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </ErrorBoundary>
     </BrowserRouter>
   );
 }

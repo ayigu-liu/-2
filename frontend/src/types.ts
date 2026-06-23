@@ -41,6 +41,13 @@ export interface PlayerInfo {
   connected: boolean;
   hand_count: number;
   is_active: boolean;
+  /** Client-computed seat position. Not sent by server. */
+  seat_index?: number;
+}
+
+/** PlayerInfo with guaranteed seat_index — used after client-side re-indexing. */
+export interface ClientPlayerInfo extends PlayerInfo {
+  seat_index: number;
 }
 
 export interface RoomBrief {

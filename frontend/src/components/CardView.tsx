@@ -20,10 +20,18 @@ interface CardViewProps {
   card?: Card;
   faceDown?: boolean;
   small?: boolean;
+  micro?: boolean;
 }
 
-export default function CardView({ card, faceDown, small }: CardViewProps) {
+export default function CardView({ card, faceDown, small, micro }: CardViewProps) {
   if (faceDown || !card) {
+    if (micro) {
+      return (
+        <div className="flex items-center justify-center rounded bg-blue-800 border border-blue-600 h-9 w-6 text-[10px]">
+          <span className="text-white font-bold">?</span>
+        </div>
+      );
+    }
     return (
       <div
         className={`flex items-center justify-center rounded-md bg-blue-800 border-2 border-blue-600 ${
@@ -38,6 +46,16 @@ export default function CardView({ card, faceDown, small }: CardViewProps) {
   const color = isRed(card.suit) ? "text-red-600" : "text-gray-900";
   const symbol = SUIT_SYMBOLS[card.suit];
   const label = RANK_LABELS[card.rank];
+
+  if (micro) {
+    return (
+      <div
+        className={`flex flex-col items-center justify-center rounded bg-white border border-gray-300 ${color} h-9 w-6 text-[10px] font-bold shadow-sm`}
+      >
+        <span>{symbol}</span>
+      </div>
+    );
+  }
 
   if (small) {
     return (
