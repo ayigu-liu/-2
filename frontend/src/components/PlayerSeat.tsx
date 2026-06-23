@@ -29,6 +29,7 @@ export default function PlayerSeat({
   size = "micro",
   style,
   onCompare,
+  lastBet,
 }: PlayerSeatProps) {
   const isEliminated = player && !player.is_active;
   const isEmpty = !player;
