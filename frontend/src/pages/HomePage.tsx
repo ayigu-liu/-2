@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { getStoredUser } from "../api/client";
+import ChipStack from "../components/ChipStack";
 
 const floatingCards = [
   { suit: "♠", label: "A", color: "text-gray-900", delay: "0s", top: "18%", left: "8%", rotate: "-15deg", floatDelay: "0s" },
@@ -63,19 +64,33 @@ export default function HomePage() {
             炸金花
           </span>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate("/login")}
-            className="rounded-xl border border-white/15 px-5 py-2 text-sm text-emerald-100/80 hover:bg-white/5 hover:text-white transition-all duration-200"
-          >
-            登录
+        <div className="flex items-center gap-2">
+          <button onClick={() => navigate("/tutorial")} className="rounded-xl border border-white/10 px-3 py-1.5 text-xs text-emerald-300/60 hover:bg-white/5 hover:text-emerald-200 transition-all duration-200">
+            📖 教程
           </button>
-          <button
-            onClick={() => navigate("/login")}
-            className="rounded-xl bg-gradient-to-r from-yellow-500 to-yellow-400 px-5 py-2 text-sm font-bold text-emerald-900 hover:from-yellow-400 hover:to-yellow-300 shadow-lg shadow-yellow-600/25 active:scale-95 transition-all duration-200"
-          >
-            注册
-          </button>
+          <div className="flex items-center gap-3 pl-2 border-l border-white/10">
+            {user ? (
+              <>
+                <ChipStack amount={user.chips} size="sm" />
+                <span className="text-sm text-emerald-200">{user.nickname || user.username}</span>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => navigate("/login")}
+                  className="rounded-xl border border-white/15 px-5 py-2 text-sm text-emerald-100/80 hover:bg-white/5 hover:text-white transition-all duration-200"
+                >
+                  登录
+                </button>
+                <button
+                  onClick={() => navigate("/login")}
+                  className="rounded-xl bg-gradient-to-r from-yellow-500 to-yellow-400 px-5 py-2 text-sm font-bold text-emerald-900 hover:from-yellow-400 hover:to-yellow-300 shadow-lg shadow-yellow-600/25 active:scale-95 transition-all duration-200"
+                >
+                  注册
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </nav>
 

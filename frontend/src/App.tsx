@@ -4,6 +4,7 @@ import HomePage from "./pages/HomePage";
 import ErrorBoundary from "./components/ErrorBoundary";
 import LobbyPage from "./pages/LobbyPage";
 import TablePage from "./pages/TablePage";
+import TutorialPage from "./pages/TutorialPage";
 import { getStoredUser } from "./api/client";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -40,6 +41,7 @@ export default function App() {
           />
           <Route path="/" element={<HomePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="/tutorial" element={<TutorialPage />} />
         </Routes>
       </ErrorBoundary>
     </BrowserRouter>

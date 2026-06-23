@@ -23,57 +23,75 @@ interface CardViewProps {
   micro?: boolean;
 }
 
+const SIZE_CLASSES = {
+  micro: "h-9 w-6",
+  small: "h-14 w-10",
+  normal: "h-20 w-14 sm:h-24 sm:w-16",
+};
+
 export default function CardView({ card, faceDown, small, micro }: CardViewProps) {
+  // small is now an alias for normal size — no separate small size
+  const variant = micro ? "micro" : "normal";
+  const sizeClass = SIZE_CLASSES[variant];
+
+  // Face-down
   if (faceDown || !card) {
     if (micro) {
       return (
-        <div className="flex items-center justify-center rounded bg-blue-800 border border-blue-600 h-9 w-6 text-[10px]">
-          <span className="text-white font-bold">?</span>
+        <div className={`flex items-center justify-center rounded bg-blue-800 border border-blue-600 ${SIZE_CLASSES.micro}`}>
+          <span className="text-white font-bold text-[10px]">?</span>
         </div>
       );
     }
     return (
       <div
-        className={`flex items-center justify-center rounded-md bg-blue-800 border-2 border-blue-600 ${
-          small ? "h-14 w-10 text-xs" : "h-20 w-14 sm:h-24 sm:w-16"
-        }`}
+        className={`relative flex items-center justify-center rounded-md ${sizeClass} overflow-hidden`}
+        style={{
+          background: "linear-gradient(135deg, #1e3a5f, #1e3a8a 40%, #312e81)",
+          backgroundImage: `
+            linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%),
+            linear-gradient(-45deg, rgba(255,255,255,0.05) 25%, transparent 25%),
+            linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.05) 75%),
+            linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.05) 75%)
+          `,
+          backgroundSize: "8px 8px",
+          backgroundPosition: "0 0, 0 4px, 4px -4px, -4px 0px",
+        }}
       >
-        <span className="text-white text-lg sm:text-xl font-bold">?</span>
+        {/* Inner border frame */}
+        <div className="absolute inset-[3px] rounded border border-blue-400/30" />
+        {/* Center 🀄 icon */}
+        <span className="relative z-10 text-lg select-none opacity-80">🀄</span>
       </div>
     );
   }
 
-  const color = isRed(card.suit) ? "text-red-600" : "text-gray-900";
+  // Face-up
+  const color = isRed(card.suit) ? "text-red-500" : "text-gray-900";
   const symbol = SUIT_SYMBOLS[card.suit];
   const label = RANK_LABELS[card.rank];
 
   if (micro) {
     return (
       <div
-        className={`flex flex-col items-center justify-center rounded bg-white border border-gray-300 ${color} h-9 w-6 text-[10px] font-bold shadow-sm`}
+        className={`flex flex-col items-center justify-center rounded bg-gradient-to-br from-white to-gray-50/80 border border-gray-300/80 ${SIZE_CLASSES.micro} shadow-md ${color}`}
       >
-        <span>{symbol}</span>
+        <span className="text-[10px] font-bold leading-none">{symbol}</span>
       </div>
     );
   }
 
-  if (small) {
-    return (
-      <div
-        className={`flex flex-col items-center justify-center rounded-md bg-white border border-gray-300 ${color} h-14 w-10 text-xs font-bold shadow`}
-      >
-        <span>{label}</span>
-        <span>{symbol}</span>
-      </div>
-    );
-  }
-
+  // Normal size — professional card layout
   return (
     <div
-      className={`flex flex-col items-center justify-center rounded-lg bg-white border-2 border-gray-200 shadow-md ${color} h-20 w-14 sm:h-24 sm:w-16 font-bold`}
+      className={`relative flex flex-col items-center justify-center rounded-lg bg-gradient-to-br from-white to-gray-50/80 border border-gray-300/80 ${sizeClass} shadow-md ${color}`}
     >
-      <span className="text-sm sm:text-base leading-none">{symbol}</span>
-      <span className="text-base sm:text-lg leading-tight">{label}</span>
+      {/* Top-left rank */}
+      <span className="absolute top-0.5 left-1 text-xs font-bold leading-none">{label}</span>
+      {/* Bottom-right rank (flipped) */}
+      <span className="absolute bottom-0.5 right-1 text-xs font-bold leading-none scale-y-[-1]">{label}</span>
+      {/* Center suit */}
+      <span className={`font-bold ${variant === "micro" ? "text-sm" : "text-xl"}`}>{symbol}</span>
     </div>
   );
 }

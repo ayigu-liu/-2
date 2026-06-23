@@ -25,6 +25,11 @@ export default function TablePage() {
     navigate("/lobby");
   }
 
+  function handlePlayAgain() {
+    dispatch({ type: "RESET" });
+    actions.ready();
+  }
+
   if (!roomId) {
     return <div className="min-h-screen bg-emerald-900 p-4 text-white">缺少房间ID</div>;
   }
@@ -81,11 +86,13 @@ export default function TablePage() {
           room={room}
           actions={actions}
           myUserId={user?.id ?? 0}
+          onPlayAgain={handlePlayAgain}
         />
         <TableMobile
           room={room}
           actions={actions}
           myUserId={user?.id ?? 0}
+          onPlayAgain={handlePlayAgain}
         />
       </main>
     </div>
