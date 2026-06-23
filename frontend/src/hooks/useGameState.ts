@@ -141,7 +141,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       };
 
     case "YOUR_CARDS":
-      return { ...state, myCards: action.cards };
+      return {
+        ...state,
+        myCards: action.cards,
+        players: state.players.map((p) =>
+          p.user_id === state.myUserId ? { ...p, hand_count: action.cards.length } : p
+        ),
+      };
 
     case "TURN_CHANGE":
       return {
