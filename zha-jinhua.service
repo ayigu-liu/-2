@@ -1,0 +1,17 @@
+[Unit]
+Description=Zha Jinhua Game Server
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/zha-jinhua
+ExecStart=/opt/zha-jinhua/zha-jinhua-server
+Environment=PORT=8080
+Environment=DB_PATH=/opt/zha-jinhua/game.db
+Environment=JWT_SECRET=zha-jinhua-deploy-secret-2024
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

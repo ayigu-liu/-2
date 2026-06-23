@@ -1,0 +1,34 @@
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    nickname TEXT NOT NULL DEFAULT '',
+    chips INTEGER NOT NULL DEFAULT 10000,
+    total_games INTEGER NOT NULL DEFAULT 0,
+    total_wins INTEGER NOT NULL DEFAULT 0,
+    total_earnings INTEGER NOT NULL DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS rooms (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    max_players INTEGER NOT NULL DEFAULT 6,
+    min_players INTEGER NOT NULL DEFAULT 2,
+    ante INTEGER NOT NULL DEFAULT 20,
+    allow_bot BOOLEAN NOT NULL DEFAULT 1,
+    status TEXT NOT NULL DEFAULT 'waiting',
+    created_by INTEGER NOT NULL REFERENCES users(id),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS game_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    room_id TEXT NOT NULL REFERENCES rooms(id),
+    player_ids TEXT NOT NULL,
+    winner_id INTEGER NOT NULL,
+    hand_type TEXT,
+    pot INTEGER NOT NULL,
+    round_count INTEGER NOT NULL,
+    finished_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);

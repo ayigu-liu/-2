@@ -1,0 +1,18 @@
+# Backend
+backend/zha-jinhua-server
+backend/zha-jinhua.db
+*.exe
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
