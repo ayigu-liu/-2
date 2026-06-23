@@ -227,7 +227,7 @@ export default function TableDesktop({ room, actions, myUserId }: TableDesktopPr
       </div>
 
       {/* Action bar */}
-      <div className="px-4 pb-3 pt-1">
+      <div className="shrink-0 px-4 pb-3 pt-1">
         {isPlaying && (
           <ActionBar
             isMyTurn={isMyTurn}
@@ -247,7 +247,7 @@ export default function TableDesktop({ room, actions, myUserId }: TableDesktopPr
 
       {/* My large cards */}
       {isPlaying && myPlayer?.hand_count ? (
-        <div className="flex justify-center gap-2 pb-1">
+        <div className="shrink-0 flex justify-center gap-2 pb-1">
           {room.seen
             ? room.myCards.map((card, i) => (
                 <div key={i} className="animate-deal" style={{ animationDelay: `${i * 0.1}s` }}>
