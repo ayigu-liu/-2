@@ -138,8 +138,6 @@ func roomSettingsToMsg(s RoomSettings) ws.RoomSettingsMsg {
 }
 
 // HandleBet processes a betting action from a player.
-// action: "call" | "raise" | "fold" | "blind_bet"
-// amount: optional raise amount (ignored for non-raise actions)
 func (r *Room) HandleBet(userID int, action string, amount int) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -148,7 +146,6 @@ func (r *Room) HandleBet(userID int, action string, amount int) {
 		return
 	}
 
-	// Validate it's this player's turn
 	activeIdx := r.Game.TurnIndex
 	if activeIdx >= len(r.Game.ActivePlayers) {
 		return
@@ -163,9 +160,7 @@ func (r *Room) HandleBet(userID int, action string, amount int) {
 		return
 	}
 
-	// Refresh TurnStart to invalidate old timer
 	r.Game.TurnStart = time.Now()
-
 
 	baseMsg := ws.S2CPlayerAction{
 		Type:       ws.S2CTypePlayerAction,
@@ -173,56 +168,36 @@ func (r *Room) HandleBet(userID int, action string, amount int) {
 		Pot:        r.Game.Pot,
 		CurrentBet: r.Game.CurrentBet,
 	}
+
 	switch action {
 	case "fold":
 		r.handleFold(userID)
 		return
 
 	case "raise":
-		raiseAmt := r.Game.CurrentBet
-		if amount > r.Game.CurrentBet {
-			raiseAmt = amount
-		}
+		raiseAmt := max(amount, r.Game.CurrentBet)
 		if raiseAmt > player.Chips {
 			raiseAmt = player.Chips
 		}
-		if raiseAmt <= r.Game.CurrentBet {
-			return // must raise more than current bet
-		}
-		if raiseAmt <= 0 {
+		if raiseAmt <= r.Game.CurrentBet || raiseAmt <= 0 {
 			return
 		}
-		player.Chips -= raiseAmt
-		r.Game.Pot += raiseAmt
+		r.chargeChips(player, raiseAmt)
 		r.Game.CurrentBet = raiseAmt
 		r.Game.LastRaiser = userID
 		r.Game.ActionsSinceLastRaise = 0
-
 		baseMsg.Action = "raise"
 		baseMsg.Amount = &raiseAmt
 		r.Broadcast(baseMsg)
 
 	case "call":
-		callAmt := r.Game.CurrentBet
-		if !r.Game.Seen[userID] {
-			// Blind player pays half (rounded down)
-			callAmt = r.Game.CurrentBet / 2
-			if callAmt < 1 {
-				callAmt = 1
-			}
-		}
-		if callAmt > player.Chips {
-			callAmt = player.Chips
-		}
+		callAmt := r.callAmount(userID, false)
 		if callAmt <= 0 {
-			// Player has no chips — they check (defense)
 			baseMsg.Action = "check"
 			baseMsg.Amount = nil
 			r.Broadcast(baseMsg)
 		} else {
-			player.Chips -= callAmt
-			r.Game.Pot += callAmt
-
+			r.chargeChips(player, callAmt)
 			baseMsg.Action = "call"
 			baseMsg.Amount = &callAmt
 			r.Broadcast(baseMsg)
@@ -230,44 +205,16 @@ func (r *Room) HandleBet(userID int, action string, amount int) {
 		r.Game.ActionsSinceLastRaise++
 
 	case "blind_bet":
-		if r.Game.Seen[userID] {
-			// Already seen — treat as normal call
-			callAmt := r.Game.CurrentBet
-			if callAmt > player.Chips {
-				callAmt = player.Chips
-			}
-			if callAmt <= 0 {
-				baseMsg.Action = "check"
-				baseMsg.Amount = nil
-				r.Broadcast(baseMsg)
-			} else {
-				player.Chips -= callAmt
-				r.Game.Pot += callAmt
-				baseMsg.Action = "call"
-				baseMsg.Amount = &callAmt
-				r.Broadcast(baseMsg)
-			}
+		betAmt := r.callAmount(userID, true)
+		if betAmt <= 0 {
+			baseMsg.Action = "check"
+			baseMsg.Amount = nil
+			r.Broadcast(baseMsg)
 		} else {
-			// Blind player bets half — broadcast as "call" to hide info
-			betAmt := r.Game.CurrentBet / 2
-			if betAmt < 1 {
-				betAmt = 1
-			}
-			if betAmt > player.Chips {
-				betAmt = player.Chips
-			}
-			if betAmt <= 0 {
-				baseMsg.Action = "check"
-				baseMsg.Amount = nil
-				r.Broadcast(baseMsg)
-			} else {
-				player.Chips -= betAmt
-				r.Game.Pot += betAmt
-				// Broadcast as "call" to not reveal blind bet info
-				baseMsg.Action = "call"
-				baseMsg.Amount = &betAmt
-				r.Broadcast(baseMsg)
-			}
+			r.chargeChips(player, betAmt)
+			baseMsg.Action = "call" // mask as call to not reveal blind status
+			baseMsg.Amount = &betAmt
+			r.Broadcast(baseMsg)
 		}
 		r.Game.ActionsSinceLastRaise++
 
@@ -281,7 +228,6 @@ func (r *Room) HandleBet(userID int, action string, amount int) {
 		return
 	}
 
-	// Check end conditions after action
 	if len(r.Game.ActivePlayers) <= 1 {
 		r.settleRound()
 		return
@@ -289,7 +235,6 @@ func (r *Room) HandleBet(userID int, action string, amount int) {
 
 	r.advanceTurn()
 
-	// If next player is a bot, trigger their action
 	if r.Game.TurnIndex < len(r.Game.ActivePlayers) {
 		nextID := r.Game.ActivePlayers[r.Game.TurnIndex]
 		nextPlayer := r.playerByID(nextID)
@@ -297,6 +242,32 @@ func (r *Room) HandleBet(userID int, action string, amount int) {
 			r.triggerBotAction(nextID)
 		}
 	}
+}
+
+// callAmount computes the actual amount a player must pay to call.
+// isBlind: true if the player is betting blind (pays half current bet).
+func (r *Room) callAmount(userID int, isBlind bool) int {
+	amt := r.Game.CurrentBet
+	if isBlind && !r.Game.Seen[userID] {
+		amt = r.Game.CurrentBet / 2
+		if amt < 1 {
+			amt = 1
+		}
+	}
+	player := r.playerByID(userID)
+	if player != nil && amt > player.Chips {
+		amt = player.Chips
+	}
+	return amt
+}
+
+// chargeChips deducts chips from a player and adds to the pot.
+func (r *Room) chargeChips(player *Player, amount int) {
+	if amount <= 0 || amount > player.Chips {
+		return
+	}
+	player.Chips -= amount
+	r.Game.Pot += amount
 }
 
 // HandleCompare processes a comparison between two players.

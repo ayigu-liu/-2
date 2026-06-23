@@ -2,6 +2,7 @@ import { useEffect, useRef, useReducer, useCallback, useState, useMemo } from "r
 import { getWsUrl } from "../api/client";
 import { gameReducer, createInitialState, reindexPlayers } from "./useGameState";
 import type { WSMessage, PlayerInfo, ClientPlayerInfo } from "../types";
+import { playChipSound, playDealSound, playTurnSound, playWinSound, playLoseSound, playShowdownSound, closeAudio } from "../utils/sounds";
 import type { GameState, GameAction } from "./useGameState";
 
 export type ConnectionStatus = "disconnected" | "connecting" | "connected";
@@ -30,8 +31,7 @@ export interface GameRoomReturn {
   dispatch: React.Dispatch<GameAction>;
 }
 
-/** Route WS message → reducer action. */
-function routeMessage(msg: WSMessage, dispatch: React.Dispatch<GameAction>) {
+function routeMessage(msg: WSMessage, dispatch: React.Dispatch<GameAction>, userId: number) {
   switch (msg.type) {
     case "room_state":
       dispatch({ type: "ROOM_STATE", roomId: msg.room_id, name: msg.name, players: msg.players });
@@ -41,12 +41,19 @@ function routeMessage(msg: WSMessage, dispatch: React.Dispatch<GameAction>) {
       break;
     case "your_cards":
       dispatch({ type: "YOUR_CARDS", cards: msg.cards });
+      playDealSound();
       break;
     case "turn_change":
       dispatch({ type: "TURN_CHANGE", playerId: msg.player_id, deadline: new Date(msg.action_deadline).getTime() });
+      if (msg.player_id === userId) {
+        playTurnSound();
+      }
       break;
     case "player_action":
       dispatch({ type: "PLAYER_ACTION", playerId: msg.player_id, action: msg.action, amount: msg.amount, pot: msg.pot, currentBet: msg.current_bet });
+      if (msg.action === "call" || msg.action === "raise" || msg.action === "blind_bet") {
+        playChipSound();
+      }
       break;
     case "player_looked":
       dispatch({ type: "PLAYER_LOOKED", playerId: msg.player_id });
@@ -59,9 +66,15 @@ function routeMessage(msg: WSMessage, dispatch: React.Dispatch<GameAction>) {
       break;
     case "showdown":
       dispatch({ type: "SHOWDOWN", players: msg.players });
+      playShowdownSound();
       break;
     case "round_settle":
       dispatch({ type: "ROUND_SETTLE", data: msg });
+      if (msg.winner_id === userId) {
+        playWinSound();
+      } else {
+        playLoseSound();
+      }
       break;
     case "game_over":
       dispatch({ type: "GAME_OVER", data: msg });
@@ -107,7 +120,7 @@ export function useGameRoom(roomId: string, userId: number): GameRoomReturn {
     ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data) as WSMessage;
-        routeMessage(msg, dispatchRef.current);
+        routeMessage(msg, dispatchRef.current, userIdRef.current);
       } catch {
         // ignore malformed messages
       }
@@ -152,6 +165,11 @@ export function useGameRoom(roomId: string, userId: number): GameRoomReturn {
     dispatch({ type: "SET_USER_ID", userId });
     connect();
   }, [roomId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Cleanup AudioContext on unmount
+  useEffect(() => {
+    return () => { closeAudio(); };
+  }, []);
 
   const actions = useMemo<GameRoomActions>(() => ({
     ready: () => send({ type: "set_ready", data: {} }),
