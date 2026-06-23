@@ -186,6 +186,9 @@ func (r *Room) HandleBet(userID int, action string, amount int) {
 		if raiseAmt > player.Chips {
 			raiseAmt = player.Chips
 		}
+		if raiseAmt <= r.Game.CurrentBet {
+			return // must raise more than current bet
+		}
 		if raiseAmt <= 0 {
 			return
 		}
@@ -193,6 +196,7 @@ func (r *Room) HandleBet(userID int, action string, amount int) {
 		r.Game.Pot += raiseAmt
 		r.Game.CurrentBet = raiseAmt
 		r.Game.LastRaiser = userID
+		r.Game.ActionsSinceLastRaise = 0
 
 		baseMsg.Action = "raise"
 		baseMsg.Amount = &raiseAmt
@@ -223,6 +227,7 @@ func (r *Room) HandleBet(userID int, action string, amount int) {
 			baseMsg.Amount = &callAmt
 			r.Broadcast(baseMsg)
 		}
+		r.Game.ActionsSinceLastRaise++
 
 	case "blind_bet":
 		if r.Game.Seen[userID] {
@@ -264,8 +269,15 @@ func (r *Room) HandleBet(userID int, action string, amount int) {
 				r.Broadcast(baseMsg)
 			}
 		}
+		r.Game.ActionsSinceLastRaise++
 
 	default:
+		return
+	}
+
+	// Auto-showdown when all active players have called since last raise
+	if r.Game.LastRaiser != -1 && r.Game.ActionsSinceLastRaise >= len(r.Game.ActivePlayers)-1 {
+		r.autoShowdown()
 		return
 	}
 
@@ -407,6 +419,34 @@ func (r *Room) HandleShowdown(userID int) {
 
 	r.Broadcast(ws.S2CShowdown{Type: ws.S2CTypeShowdown, Players: players})
 
+	r.settleRound()
+}
+
+// autoShowdown triggers an automatic showdown when all active players
+// have called since the last raise, without requiring a user request.
+func (r *Room) autoShowdown() {
+	if r.Game == nil || r.Game.Phase != PhaseBetting {
+		return
+	}
+	if len(r.Game.ActivePlayers) < 2 {
+		r.settleRound()
+		return
+	}
+
+	// Evaluate all active hands
+	players := make([]ws.ShowdownPlayer, 0, len(r.Game.ActivePlayers))
+	for _, uid := range r.Game.ActivePlayers {
+		result := game.EvaluateHand(r.Game.Hands[uid])
+		players = append(players, ws.ShowdownPlayer{
+			ID:       uid,
+			Cards:    toWSCards(r.Game.Hands[uid]),
+			HandType: result.HandType,
+			HandRank: result.HandRank,
+		})
+	}
+
+	r.Game.Phase = PhaseShowdown
+	r.Broadcast(ws.S2CShowdown{Type: ws.S2CTypeShowdown, Players: players})
 	r.settleRound()
 }
 

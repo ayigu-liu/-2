@@ -49,26 +49,6 @@ func (r *Room) triggerBotAction(userID int) {
 	go func() {
 		time.Sleep(ai.BotDelay())
 
-		r.mu.Lock()
-		defer r.mu.Unlock()
-
-		if r.Status != StatusPlaying || r.Game == nil {
-			return
-		}
-
-		// Check if still this bot's turn
-		activeIdx := r.FindActivePlayerIndex(userID)
-		if activeIdx < 0 {
-			return
-		}
-
-		if r.Game.TurnIndex >= len(r.Game.ActivePlayers) {
-			return
-		}
-		if r.Game.ActivePlayers[r.Game.TurnIndex] != userID {
-			return
-		}
-
 		hand := r.Game.Hands[userID]
 		seen := r.Game.Seen[userID]
 		action, amount := ai.BotDecision(
@@ -80,12 +60,7 @@ func (r *Room) triggerBotAction(userID int) {
 			len(r.Game.ActivePlayers),
 		)
 
-		// Execute the bet
-		if action == "fold" {
-			r.handleFold(userID)
-		} else {
-			r.handleBetAction(userID, action, amount)
-		}
+		r.HandleBet(userID, action, amount)
 	}()
 }
 
@@ -101,70 +76,7 @@ func (r *Room) getPlayerChips(userID int) int {
 
 // handleBetAction processes a bet action from a player.
 func (r *Room) handleBetAction(userID int, action string, amount int) {
-	player := r.playerByID(userID)
-	if player == nil {
-		return
-	}
-
-	if amount > player.Chips {
-		amount = player.Chips
-	}
-
-	switch action {
-	case "call", "blind_bet":
-		if amount > 0 {
-			player.Chips -= amount
-			r.Game.Pot += amount
-		}
-		r.Broadcast(&struct {
-			Type     string `json:"type"`
-			PlayerID int    `json:"player_id"`
-			Action   string `json:"action"`
-			Amount   *int   `json:"amount,omitempty"`
-			Pot      int    `json:"pot"`
-		}{
-			Type:     "player_action",
-			PlayerID: userID,
-			Action:   action,
-			Amount:   &amount,
-			Pot:      r.Game.Pot,
-		})
-	case "raise":
-		if amount > r.Game.CurrentBet {
-			r.Game.CurrentBet = amount
-			r.Game.LastRaiser = userID
-		}
-		player.Chips -= amount
-		r.Game.Pot += amount
-		r.Broadcast(&struct {
-			Type     string `json:"type"`
-			PlayerID int    `json:"player_id"`
-			Action   string `json:"action"`
-			Amount   *int   `json:"amount,omitempty"`
-			Pot      int    `json:"pot"`
-		}{
-			Type:     "player_action",
-			PlayerID: userID,
-			Action:   "raise",
-			Amount:   &amount,
-			Pot:      r.Game.Pot,
-		})
-	}
-
-	// Check if only one player remains
-	if len(r.Game.ActivePlayers) <= 1 {
-		r.settleRound()
-		return
-	}
-
-	r.advanceTurn()
-
-	// If the next player is a bot, trigger their action
-	nextUserID := r.Game.ActivePlayers[r.Game.TurnIndex]
-	nextPlayer := r.playerByID(nextUserID)
-	if nextPlayer != nil && nextPlayer.IsBot {
-		r.triggerBotAction(nextUserID)
-	}
+	r.HandleBet(userID, action, amount)
 }
 
 // handleFold processes a fold.

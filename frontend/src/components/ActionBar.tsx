@@ -62,6 +62,7 @@ export default function ActionBar({
   const [showComparePicker, setShowComparePicker] = useState(false);
   const [raiseAmount, setRaiseAmount] = useState<number | null>(null);
   const [showRaiseInput, setShowRaiseInput] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{type: string; callback: () => void} | null>(null);
 
   if (!isMyTurn) {
     return (
@@ -91,6 +92,34 @@ export default function ActionBar({
 
   return (
     <div className="flex flex-col items-center gap-3 py-3">
+          {confirmAction && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+              <div className="glass-strong rounded-2xl p-6 text-center max-w-xs border border-white/10 animate-entrance">
+                <div className="text-sm text-emerald-200/80 mb-4">
+                  {confirmAction.type === "fold" ? "确定弃牌？" :
+                   confirmAction.type === "compare" ? "确定比牌？（需支付当前注额）" :
+                   "确定摊牌？"}
+                </div>
+                <div className="flex gap-3 justify-center">
+                  <button
+                    onClick={() => {
+                      confirmAction.callback();
+                      setConfirmAction(null);
+                    }}
+                    className="rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-400 px-6 py-2.5 font-bold text-white hover:from-emerald-400 hover:to-emerald-300 transition-all active:scale-95"
+                  >
+                    确认
+                  </button>
+                  <button
+                    onClick={() => setConfirmAction(null)}
+                    className="rounded-xl bg-white/5 border border-white/10 px-6 py-2.5 font-bold text-emerald-200 hover:bg-white/10 transition-all active:scale-95"
+                  >
+                    取消
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
       {showRaiseInput ? (
         /* ── Raise amount panel ── */
         <div className="glass-strong rounded-2xl p-5 w-full max-w-md border border-yellow-500/20 animate-entrance">
@@ -136,7 +165,8 @@ export default function ActionBar({
                   setRaiseAmount(null);
                 }
               }}
-              className="rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 px-5 py-2.5 font-bold text-white hover:from-amber-400 hover:to-yellow-400 transition-all duration-150 active:scale-95 shadow-lg shadow-amber-500/20"
+              disabled={!raiseAmount || raiseAmount <= 0}
+              className="rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 px-5 py-2.5 font-bold text-white hover:from-amber-400 hover:to-yellow-400 transition-all duration-150 active:scale-95 shadow-lg shadow-amber-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               确认
             </button>
@@ -203,15 +233,15 @@ export default function ActionBar({
             {/* Right side: game flow actions */}
             <div className="flex flex-wrap gap-2">
               {seen && (
-                <GlassButton onClick={() => setShowComparePicker(true)} color="orange" label="比牌" />
+                <GlassButton onClick={() => setConfirmAction({type:"compare", callback:() => setShowComparePicker(true)})} color="orange" label="比牌" />
               )}
 
               <div className="w-px self-stretch bg-white/5 mx-1 shrink-0" />
 
-              <GlassButton onClick={() => onBet("fold")} color="red" label="弃牌" />
+              <GlassButton onClick={() => setConfirmAction({type:"fold", callback:() => onBet("fold")})} color="red" label="弃牌" />
 
               {canShowdown && (
-                <GlassButton onClick={onShowdown} color="yellow" label="摊牌" />
+                <GlassButton onClick={() => setConfirmAction({type:"showdown", callback:onShowdown})} color="yellow" label="摊牌" />
               )}
             </div>
           </div>

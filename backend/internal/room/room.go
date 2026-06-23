@@ -69,6 +69,7 @@ type GameSession struct {
 	Eliminated    []int // user IDs eliminated this hand
 	RoundCount    int
 	LastRaiser    int // user ID who last raised; -1 if none
+	ActionsSinceLastRaise int // consecutive calls since last raise
 }
 
 type Room struct {

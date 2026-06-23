@@ -66,9 +66,11 @@ interface BetFlyEvent {
 
 export default function TableDesktop({ room, actions, myUserId, onPlayAgain }: TableDesktopProps) {
   const [showSettle, setShowSettle] = useState(false);
+  const [showDeal, setShowDeal] = useState(false);
 
   const [betFlies, setBetFlies] = useState<BetFlyEvent[]>([]);
   const flyIdRef = useRef(0);
+  const prevCardsLenRef = useRef(0);
   useEffect(() => {
     if (room.roundResult) {
       setShowSettle(true);
@@ -78,6 +80,17 @@ export default function TableDesktop({ room, actions, myUserId, onPlayAgain }: T
       setShowSettle(false);
     }
   }, [room.roundResult]);
+  useEffect(() => {
+    if (room.myCards.length > 0 && prevCardsLenRef.current === 0) {
+      setShowDeal(true);
+      const timer = setTimeout(() => setShowDeal(false), 1200);
+      prevCardsLenRef.current = room.myCards.length;
+      return () => clearTimeout(timer);
+    }
+    if (room.myCards.length === 0) {
+      prevCardsLenRef.current = 0;
+    }
+  }, [room.myCards.length]);
 
   const isMyTurn = room.currentTurn === myUserId;
   const myPlayer = room.players.find((p) => p.user_id === myUserId);
@@ -261,6 +274,21 @@ export default function TableDesktop({ room, actions, myUserId, onPlayAgain }: T
                 onComplete={(id) => setBetFlies(prev => prev.filter(f => f.id !== id))}
               />
             ))}
+
+            {showDeal && (
+              <div className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none">
+                <div className="text-center animate-entrance">
+                  <div className="flex gap-2 justify-center mb-2">
+                    {[0,1,2].map(i => (
+                      <div key={i} className="animate-deal" style={{animationDelay: `${i*0.15}s`}}>
+                        <div className="w-10 h-14 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 border border-amber-300/30 shadow-lg shadow-amber-500/20" />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="text-xs text-amber-300/70 animate-pulse">发牌中...</div>
+                </div>
+              </div>
+            )}
 
             {isReadyPhase && (
               <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
