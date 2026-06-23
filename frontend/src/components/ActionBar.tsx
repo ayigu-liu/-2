@@ -181,30 +181,39 @@ export default function ActionBar({
           </button>
         </div>
       ) : (
-        /* ── Main action buttons ── */
-        <div className="w-full max-w-2xl">
-          <div className="flex flex-nowrap gap-2 overflow-x-auto px-2 pb-1 [scrollbar-width:none] [-webkit-scrollbar:none]">
-            {!seen && (
-              <GlassButton onClick={onLookCards} color="blue" label="看牌" />
-            )}
+        /* ── Main action buttons (left & right) ── */
+        <div className="w-full max-w-4xl">
+          <div className="flex justify-between items-end gap-4 px-2">
+            {/* Left side: betting actions */}
+            <div className="flex flex-wrap gap-2">
+              {!seen && (
+                <GlassButton onClick={onLookCards} color="blue" label="看牌" />
+              )}
 
-            {seen ? (
-              <>
-                <GlassButton onClick={() => onBet("call")} color="emerald" label="跟注" />
-                <GlassButton onClick={() => setShowRaiseInput(true)} color="amber" label="加注" />
+              {seen ? (
+                <>
+                  <GlassButton onClick={() => onBet("call")} color="emerald" label="跟注" />
+                  <GlassButton onClick={() => setShowRaiseInput(true)} color="amber" label="加注" />
+                </>
+              ) : (
+                <GlassButton onClick={() => onBet("blind_bet")} color="purple" label="闷牌" glow />
+              )}
+            </div>
+
+            {/* Right side: game flow actions */}
+            <div className="flex flex-wrap gap-2">
+              {seen && (
                 <GlassButton onClick={() => setShowComparePicker(true)} color="orange" label="比牌" />
-              </>
-            ) : (
-              <GlassButton onClick={() => onBet("blind_bet")} color="purple" label="闷牌" glow />
-            )}
+              )}
 
-            <div className="w-px self-stretch bg-white/5 mx-1 shrink-0" />
+              <div className="w-px self-stretch bg-white/5 mx-1 shrink-0" />
 
-            <GlassButton onClick={() => onBet("fold")} color="red" label="弃牌" />
+              <GlassButton onClick={() => onBet("fold")} color="red" label="弃牌" />
 
-            {canShowdown && (
-              <GlassButton onClick={onShowdown} color="yellow" label="摊牌" />
-            )}
+              {canShowdown && (
+                <GlassButton onClick={onShowdown} color="yellow" label="摊牌" />
+              )}
+            </div>
           </div>
         </div>
       )}
