@@ -16,3 +16,7 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+*.db
+*.db-shm
+*.db-wal
+backend/zha-jinhua-server
