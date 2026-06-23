@@ -1,13 +1,16 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { getStoredUser } from "../api/client";
 import { useGameRoom } from "../hooks/useGameRoom";
 import LoadingSpinner from "../components/LoadingSpinner";
 import TableDesktop from "../components/TableDesktop";
 import TableMobile from "../components/TableMobile";
+import ChatBox from "../components/ChatBox";
 
 export default function TablePage() {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const password = searchParams.get("password") || undefined;
   const user = getStoredUser();
 
   const {
@@ -16,7 +19,8 @@ export default function TablePage() {
     error: connError,
     actions,
     dispatch,
-  } = useGameRoom(roomId ?? "", user?.id ?? 0);
+  } = useGameRoom(roomId ?? "", user?.id ?? 0, password);
+  const [isChatOpen, setChatOpen] = useState(false);
 
   const myPlayer = room.players.find((p) => p.user_id === user?.id);
 
@@ -95,6 +99,14 @@ export default function TablePage() {
           onPlayAgain={handlePlayAgain}
         />
       </main>
+
+      <ChatBox
+        messages={room.chatMessages}
+        onSend={actions.sendChat}
+        myUserId={user?.id ?? 0}
+        isOpen={isChatOpen}
+        onToggle={() => setChatOpen((o) => !o)}
+      />
     </div>
   );
 }

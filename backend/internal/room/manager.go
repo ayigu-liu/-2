@@ -28,7 +28,7 @@ func GetManager() *Manager {
 	return globalManager
 }
 
-func (m *Manager) CreateRoom(name string, maxPlayers, minPlayers, ante int, allowBot bool, createdBy int) (*Room, error) {
+func (m *Manager) CreateRoom(name string, maxPlayers, minPlayers, ante int, allowBot bool, password string, createdBy int) (*Room, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -41,7 +41,7 @@ func (m *Manager) CreateRoom(name string, maxPlayers, minPlayers, ante int, allo
 		}
 	}
 
-	room := NewRoom(name, code, maxPlayers, minPlayers, ante, allowBot, createdBy, m.DB)
+	room := NewRoom(name, code, maxPlayers, minPlayers, ante, allowBot, password, createdBy, m.DB)
 	m.rooms[code] = room
 	return room, nil
 }

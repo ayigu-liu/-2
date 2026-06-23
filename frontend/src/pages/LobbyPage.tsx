@@ -14,8 +14,11 @@ export default function LobbyPage() {
   const [createAnte, setCreateAnte] = useState(20);
   const [createPlayers, setCreatePlayers] = useState(6);
   const [createBot, setCreateBot] = useState(true);
+  const [createPassword, setCreatePassword] = useState("");
   const [error, setError] = useState("");
   const [matching, setMatching] = useState(false);
+  const [joinPasswordRoom, setJoinPasswordRoom] = useState<RoomBrief | null>(null);
+  const [joinPassword, setJoinPassword] = useState("");
 
   async function loadRooms() {
     try {
@@ -41,6 +44,7 @@ export default function LobbyPage() {
         max_players: createPlayers,
         ante: createAnte,
         allow_bot: createBot,
+        password: createPassword || undefined,
       });
       setShowCreate(false);
       navigate(`/table/${room.id}`);
@@ -58,7 +62,6 @@ export default function LobbyPage() {
         navigate(`/table/${joinable.id}`);
         return;
       }
-      // No joinable room — create a default one
       const room = await createRoom({
         name: "快速匹配",
         max_players: 6,
@@ -71,8 +74,13 @@ export default function LobbyPage() {
     }
   }
 
-  function handleJoin(roomId: string) {
-    navigate(`/table/${roomId}`);
+  function handleJoin(room: RoomBrief) {
+    if (room.has_password) {
+      setJoinPasswordRoom(room);
+      setJoinPassword("");
+    } else {
+      navigate(`/table/${room.id}`);
+    }
   }
 
   function handleLogout() {
@@ -189,6 +197,16 @@ export default function LobbyPage() {
                 />
                 允许 AI 机器人
               </label>
+              <div>
+                <label className="block text-xs text-emerald-300/70 mb-1">房间密码（可选）</label>
+                <input
+                  type="text"
+                  value={createPassword}
+                  onChange={(e) => setCreatePassword(e.target.value)}
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder-emerald-400/50 focus:outline-none focus:border-yellow-500/50"
+                  placeholder="留空则无密码"
+                />
+              </div>
               <div className="flex gap-2 pt-2">
                 <button
                   onClick={() => setShowCreate(false)}
@@ -229,13 +247,13 @@ export default function LobbyPage() {
               {rooms.map((room) => (
                 <div
                   key={room.id}
-                  onClick={() => handleJoin(room.id)}
+                  onClick={() => handleJoin(room)}
                   className="flex cursor-pointer items-center justify-between rounded-xl border border-white/5 bg-white/[0.03] px-4 py-3 transition hover:bg-white/[0.06] hover:border-white/10"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="text-lg">🃏</div>
                     <div className="min-w-0">
-                      <h3 className="font-semibold text-emerald-100 truncate">{room.name}</h3>
+                      <h3 className="font-semibold text-emerald-100 truncate">{room.name}{room.has_password ? " 🔒" : ""}</h3>
                       <p className="text-xs text-emerald-400/60">
                         {room.player_count}/{room.max_players} 人
                         {room.allow_bot ? " · 可补AI" : ""}
@@ -255,6 +273,56 @@ export default function LobbyPage() {
           )}
         </div>
       </main>
+
+      {/* Password prompt dialog */}
+      {joinPasswordRoom && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="rounded-2xl border border-yellow-500/20 bg-emerald-900 p-6 w-80 shadow-2xl">
+            <h3 className="text-lg font-bold mb-1">输入密码</h3>
+            <p className="text-sm text-emerald-300/70 mb-4">
+              加入房间 "{joinPasswordRoom.name}"
+            </p>
+            {error && (
+              <div className="mb-3 rounded bg-red-700/50 px-3 py-2 text-sm">{error}</div>
+            )}
+            <input
+              type="text"
+              value={joinPassword}
+              onChange={(e) => {
+                setJoinPassword(e.target.value);
+                setError("");
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  navigate(`/table/${joinPasswordRoom.id}?password=${encodeURIComponent(joinPassword)}`);
+                  setJoinPasswordRoom(null);
+                }
+              }}
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder-emerald-400/50 focus:outline-none focus:border-yellow-500/50 mb-4"
+              placeholder="输入密码"
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => setJoinPasswordRoom(null)}
+                className="flex-1 rounded-xl border border-white/10 py-2 text-sm text-emerald-300/70 hover:bg-white/5 transition-all"
+              >
+                取消
+              </button>
+              <button
+                onClick={() => {
+                  navigate(`/table/${joinPasswordRoom.id}?password=${encodeURIComponent(joinPassword)}`);
+                  setJoinPasswordRoom(null);
+                }}
+                className="flex-1 rounded-xl bg-gradient-to-r from-yellow-500 to-yellow-400 py-2 text-sm font-bold text-emerald-900 hover:from-yellow-400 hover:to-yellow-300 transition-all"
+              >
+                加入
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

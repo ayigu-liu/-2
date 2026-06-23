@@ -60,6 +60,7 @@ export interface RoomBrief {
   status: string;
   player_count: number;
   created_by: number;
+  has_password: boolean;
 }
 
 export interface RoomDetail {
@@ -72,6 +73,7 @@ export interface RoomDetail {
   status: string;
   players: PlayerInfo[];
   created_by: number;
+  has_password: boolean;
 }
 
 // Game state
@@ -183,6 +185,13 @@ export interface S2CRoomError {
   message: string;
 }
 
+export interface S2CChatMessage {
+  type: "chat_message";
+  user_id: number;
+  username: string;
+  content: string;
+}
+
 export type WSMessage =
   | S2CRoomState
   | S2CGameStart
@@ -195,4 +204,5 @@ export type WSMessage =
   | S2CShowdown
   | S2CRoundSettle
   | S2CGameOver
-  | S2CRoomError;
+  | S2CRoomError
+  | S2CChatMessage;

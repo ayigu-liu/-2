@@ -104,6 +104,7 @@ export async function createRoom(data: {
   min_players?: number;
   ante?: number;
   allow_bot?: boolean;
+  password?: string;
 }): Promise<RoomBrief> {
   return request<RoomBrief>("/rooms", {
     method: "POST",

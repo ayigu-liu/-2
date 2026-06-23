@@ -20,6 +20,7 @@ export interface GameRoomActions {
   showdown: () => void;
   leave: () => void;
   reconnect: () => void;
+  sendChat: (content: string) => void;
 }
 
 export interface GameRoomReturn {
@@ -79,10 +80,13 @@ function routeMessage(msg: WSMessage, dispatch: React.Dispatch<GameAction>, user
     case "game_over":
       dispatch({ type: "GAME_OVER", data: msg });
       break;
+    case "chat_message":
+      dispatch({ type: "CHAT_MESSAGE", message: msg });
+      break;
   }
 }
 
-export function useGameRoom(roomId: string, userId: number): GameRoomReturn {
+export function useGameRoom(roomId: string, userId: number, password?: string): GameRoomReturn {
   const [state, dispatch] = useReducer(gameReducer, userId, createInitialState);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("disconnected");
   const [error, setError] = useState<string | null>(null);
@@ -153,10 +157,10 @@ export function useGameRoom(roomId: string, userId: number): GameRoomReturn {
   // Join room when connected
   useEffect(() => {
     if (connectionStatus === "connected" && roomId && !joinedRef.current) {
-      send({ type: "join_room", data: { room_id: roomId } });
+      send({ type: "join_room", data: { room_id: roomId, password: password || "" } });
       joinedRef.current = true;
     }
-  }, [connectionStatus, roomId, send]);
+  }, [connectionStatus, roomId, send, password]);
 
   // Reset + reconnect on roomId change
   useEffect(() => {
@@ -181,6 +185,7 @@ export function useGameRoom(roomId: string, userId: number): GameRoomReturn {
     compare: (targetId) => send({ type: "compare", data: { target_player_id: targetId } }),
     showdown: () => send({ type: "showdown", data: {} }),
     leave: () => send({ type: "leave_room", data: {} }),
+    sendChat: (content) => send({ type: "send_chat", data: { content } }),
     reconnect: () => {
       joinedRef.current = false;
       connect();

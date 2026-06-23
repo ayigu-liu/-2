@@ -18,30 +18,33 @@ type createRoomRequest struct {
 	MinPlayers *int   `json:"min_players,omitempty"`
 	Ante       *int   `json:"ante,omitempty"`
 	AllowBot   *bool  `json:"allow_bot,omitempty"`
+	Password   string `json:"password,omitempty"`
 }
 
 type roomResponse struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	MaxPlayers int    `json:"max_players"`
-	MinPlayers int    `json:"min_players"`
-	Ante       int    `json:"ante"`
-	AllowBot   bool   `json:"allow_bot"`
-	Status     string `json:"status"`
-	PlayerCount int   `json:"player_count"`
-	CreatedBy  int    `json:"created_by"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	MaxPlayers  int    `json:"max_players"`
+	MinPlayers  int    `json:"min_players"`
+	Ante        int    `json:"ante"`
+	AllowBot    bool   `json:"allow_bot"`
+	Status      string `json:"status"`
+	PlayerCount int    `json:"player_count"`
+	CreatedBy   int    `json:"created_by"`
+	HasPassword bool   `json:"has_password"`
 }
 
 type roomDetailResponse struct {
-	ID         string        `json:"id"`
-	Name       string        `json:"name"`
-	MaxPlayers int           `json:"max_players"`
-	MinPlayers int           `json:"min_players"`
-	Ante       int           `json:"ante"`
-	AllowBot   bool          `json:"allow_bot"`
-	Status     string        `json:"status"`
-	Players    []playerBrief `json:"players"`
-	CreatedBy  int           `json:"created_by"`
+	ID          string        `json:"id"`
+	Name        string        `json:"name"`
+	MaxPlayers  int           `json:"max_players"`
+	MinPlayers  int           `json:"min_players"`
+	Ante        int           `json:"ante"`
+	AllowBot    bool          `json:"allow_bot"`
+	Status      string        `json:"status"`
+	Players     []playerBrief `json:"players"`
+	CreatedBy   int           `json:"created_by"`
+	HasPassword bool          `json:"has_password"`
 }
 
 type playerBrief struct {
@@ -97,7 +100,7 @@ func (h *RoomHandler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r2, err := h.Manager.CreateRoom(req.Name, maxPlayers, minPlayers, ante, allowBot, userID)
+	r2, err := h.Manager.CreateRoom(req.Name, maxPlayers, minPlayers, ante, allowBot, req.Password, userID)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to create room"})
 		return
@@ -113,6 +116,7 @@ func (h *RoomHandler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 		Status:      string(r2.Status),
 		PlayerCount: r2.TotalPlayerCount(),
 		CreatedBy:   r2.CreatedBy,
+		HasPassword: r2.Settings.Password != "",
 	})
 }
 
@@ -136,6 +140,7 @@ func (h *RoomHandler) ListRooms(w http.ResponseWriter, r *http.Request) {
 			Status:      string(r2.Status),
 			PlayerCount: r2.TotalPlayerCount(),
 			CreatedBy:   r2.CreatedBy,
+			HasPassword: r2.Settings.Password != "",
 		})
 	}
 
@@ -180,5 +185,6 @@ func (h *RoomHandler) GetRoom(w http.ResponseWriter, r *http.Request) {
 		Status:     string(r2.Status),
 		Players:    players,
 		CreatedBy:  r2.CreatedBy,
+		HasPassword: r2.Settings.Password != "",
 	})
 }

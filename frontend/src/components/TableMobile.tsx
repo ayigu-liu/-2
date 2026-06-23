@@ -1,11 +1,18 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import CardView from "./CardView";
 import PlayerSeat from "./PlayerSeat";
 import PotDisplay from "./PotDisplay";
 import ActionBar from "./ActionBar";
 import TimerBar from "./TimerBar";
 import ChipStack from "./ChipStack";
+import ChipFly from "./ChipFly";
 import type { GameRoomState, GameRoomActions } from "../hooks/useGameRoom";
+
+interface BetFlyEvent {
+  id: number;
+  playerId: number;
+  amount: number;
+}
 
 interface TableMobileProps {
   room: GameRoomState;
@@ -26,6 +33,20 @@ export default function TableMobile({ room, actions, myUserId, onPlayAgain }: Ta
   const allActiveIds = room.players.filter((p) => p.is_active).map((p) => p.user_id);
   const isReadyPhase = !room.phase && !room.gameOver;
   const isPlaying = room.phase || room.gameOver;
+  const [betFlies, setBetFlies] = useState<BetFlyEvent[]>([]);
+  const flyIdRef = useRef(0);
+
+  /* ── ChipFly animation ── */
+  useEffect(() => {
+    if (room.lastAction?.amount && room.lastAction.amount > 0) {
+      const id = ++flyIdRef.current;
+      setBetFlies(prev => [...prev, {
+        id,
+        playerId: room.lastAction!.player_id,
+        amount: room.lastAction!.amount,
+      }]);
+    }
+  }, [room.lastAction]);
 
   return (
     <div className="md:hidden flex-1 flex flex-col">
@@ -90,6 +111,18 @@ export default function TableMobile({ room, actions, myUserId, onPlayAgain }: Ta
       ) : !isPlaying ? null : (
         /* ── Playing ── */
         <>
+
+          {/* ChipFly animations */}
+          {betFlies.map(fly => (
+            <ChipFly
+              key={fly.id}
+              id={fly.id}
+              fromTop="30%"
+              fromLeft="50%"
+              amount={fly.amount}
+              onComplete={(id) => setBetFlies(prev => prev.filter(f => f.id !== id))}
+            />
+          ))}
           {/* Opponents */}
           <div className="flex justify-center gap-2 p-2 overflow-x-auto">
             {activeOthers.slice(0, 5).map((p) => (
@@ -101,6 +134,7 @@ export default function TableMobile({ room, actions, myUserId, onPlayAgain }: Ta
                 showCards={false}
                 size="micro"
                 style={{ position: "static" }}
+                lastBet={room.playerBets[p.user_id]}
               />
             ))}
           </div>

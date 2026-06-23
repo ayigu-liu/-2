@@ -7,6 +7,7 @@ import type {
   S2CRoundSettle,
   S2CGameOver,
 } from "../types";
+import type { S2CChatMessage } from "../types";
 
 export interface ActionLog {
   player_id: number;
@@ -46,6 +47,7 @@ export interface GameState {
   gameOver: S2CGameOver | null;
   actionHistory: ActionLog[];
   playerBets: Record<number, number>;
+  chatMessages: S2CChatMessage[];
 }
 
 export type GameAction =
@@ -62,7 +64,8 @@ export type GameAction =
   | { type: "SHOWDOWN"; players: { id: number; cards: Card[]; hand_type: string }[] }
   | { type: "ROUND_SETTLE"; data: S2CRoundSettle }
   | { type: "GAME_OVER"; data: S2CGameOver }
-  | { type: "SET_SEEN" };
+  | { type: "SET_SEEN" }
+  | { type: "CHAT_MESSAGE"; message: S2CChatMessage }
 
 /** Pure function: reindex players so seat 0 = me, rest in original order. */
 export function reindexPlayers(players: PlayerInfo[], myUserId: number): ClientPlayerInfo[] {
@@ -105,6 +108,7 @@ export function createInitialState(userId: number): GameState {
     gameOver: null,
     actionHistory: [],
     playerBets: {},
+    chatMessages: [],
   };
 }
 
@@ -141,6 +145,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         actionHistory: [],
         gameOver: null,
         playerBets: {},
+        chatMessages: [],
       };
 
     case "YOUR_CARDS":
@@ -234,6 +239,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case "SET_SEEN":
       return { ...state, seen: true };
+
+    case "CHAT_MESSAGE":
+      return {
+        ...state,
+        chatMessages: [
+          ...state.chatMessages,
+          { type: "chat_message", user_id: action.message.user_id, username: action.message.username, content: action.message.content },
+        ],
+      };
 
     default:
       return state;

@@ -10,7 +10,8 @@ type Card struct {
 // --- Client-to-Server message types ---
 
 type C2SJoinRoom struct {
-	RoomID string `json:"room_id"`
+	RoomID   string `json:"room_id"`
+	Password string `json:"password,omitempty"`
 }
 
 type C2SLeaveRoom struct{}
@@ -54,9 +55,17 @@ const (
 	S2CTypePlayerEliminated  = "player_eliminated"
 	S2CTypeShowdown          = "showdown"
 	S2CTypeRoundSettle       = "round_settle"
+	S2CTypeChatMessage      = "chat_message"
 	S2CTypeGameOver          = "game_over"
 )
 // --- Server-to-Client message types ---
+
+type S2CChatMessage struct {
+	Type     string `json:"type"`
+	UserID   int    `json:"user_id"`
+	Username string `json:"username"`
+	Content  string `json:"content"`
+}
 
 type S2CRoomState struct {
 	Type     string          `json:"type"`
@@ -80,10 +89,11 @@ type PlayerInfo struct {
 }
 
 type RoomSettingsMsg struct {
-	MaxPlayers int  `json:"max_players"`
-	MinPlayers int  `json:"min_players"`
-	Ante       int  `json:"ante"`
-	AllowBot   bool `json:"allow_bot"`
+	MaxPlayers  int  `json:"max_players"`
+	MinPlayers  int  `json:"min_players"`
+	Ante        int  `json:"ante"`
+	AllowBot    bool `json:"allow_bot"`
+	HasPassword bool `json:"has_password"`
 }
 
 type S2CRoomError struct {

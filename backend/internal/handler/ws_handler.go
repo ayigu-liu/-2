@@ -51,7 +51,7 @@ func NewWSHandler(manager *room.Manager, hub *ws.Hub) *WSHandler {
 					h.sendError(userID, "bad_request", "invalid join_room data")
 					return
 				}
-				h.handleJoinRoom(userID, msg.RoomID)
+				h.handleJoinRoom(userID, msg.RoomID, msg.Password)
 			}
 		case "leave_room":
 			return func(userID int, data json.RawMessage) {
@@ -90,6 +90,39 @@ func NewWSHandler(manager *room.Manager, hub *ws.Hub) *WSHandler {
 		case "showdown":
 			return func(userID int, data json.RawMessage) {
 				h.handleShowdown(userID)
+			}
+		case "send_chat":
+			return func(userID int, data json.RawMessage) {
+				var msg struct {
+					Content string `json:"content"`
+				}
+				if err := json.Unmarshal(data, &msg); err != nil || msg.Content == "" {
+					return
+				}
+				if len(msg.Content) > 200 {
+					msg.Content = msg.Content[:200]
+				}
+				roomID := h.getUserRoom(userID)
+				if roomID == "" {
+					return
+				}
+				r := h.Manager.GetRoom(roomID)
+				if r == nil {
+					return
+				}
+				h.mu.RLock()
+				user := h.userModels[userID]
+				h.mu.RUnlock()
+				username := user.Nickname
+				if username == "" {
+					username = user.Username
+				}
+				r.Broadcast(ws.S2CChatMessage{
+					Type:     ws.S2CTypeChatMessage,
+					UserID:   userID,
+					Username: username,
+					Content:  msg.Content,
+				})
 			}
 		default:
 			return nil
@@ -163,10 +196,16 @@ func (h *WSHandler) getClient(userID int) *ws.Client {
 	return h.userClients[userID]
 }
 
-func (h *WSHandler) handleJoinRoom(userID int, roomID string) {
+func (h *WSHandler) handleJoinRoom(userID int, roomID string, password string) {
 	r := h.Manager.GetRoom(roomID)
 	if r == nil {
 		h.sendError(userID, "room_not_found", "房间不存在")
+		return
+	}
+
+	// Check password
+	if r.Settings.Password != "" && r.Settings.Password != password {
+		h.sendError(userID, "wrong_password", "房间密码错误")
 		return
 	}
 
@@ -300,9 +339,10 @@ func (h *WSHandler) getUserRoom(userID int) string {
 func roomStateFromRoom(r *room.Room) ws.S2CRoomState {
 	info := r.PlayerInfoList()
 	return ws.S2CRoomState{Type: ws.S2CTypeRoomState, RoomID: r.ID, Name: r.Name, Status: string(r.Status), Settings: ws.RoomSettingsMsg{
-			MaxPlayers: r.Settings.MaxPlayers,
-			MinPlayers: r.Settings.MinPlayers,
-			Ante:       r.Settings.Ante,
-			AllowBot:   r.Settings.AllowBot,
+			MaxPlayers:  r.Settings.MaxPlayers,
+			MinPlayers:  r.Settings.MinPlayers,
+			Ante:        r.Settings.Ante,
+			AllowBot:    r.Settings.AllowBot,
+			HasPassword: r.Settings.Password != "",
 		}, Players: info}
 }

@@ -38,6 +38,7 @@ type RoomSettings struct {
 	MinPlayers int
 	Ante       int
 	AllowBot   bool
+	Password   string
 }
 
 type Player struct {
@@ -87,7 +88,7 @@ type Room struct {
 	timerDone chan struct{}
 }
 
-func NewRoom(name, id string, maxPlayers, minPlayers, ante int, allowBot bool, createdBy int, db *sql.DB) *Room {
+func NewRoom(name, id string, maxPlayers, minPlayers, ante int, allowBot bool, password string, createdBy int, db *sql.DB) *Room {
 	r := &Room{
 		ID:   id,
 		Name: name,
@@ -96,6 +97,7 @@ func NewRoom(name, id string, maxPlayers, minPlayers, ante int, allowBot bool, c
 			MinPlayers: minPlayers,
 			Ante:       ante,
 			AllowBot:   allowBot,
+			Password:   password,
 		},
 		Status:    StatusWaiting,
 		Players:   make([]*Player, 0, maxPlayers),
