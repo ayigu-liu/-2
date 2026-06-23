@@ -4,6 +4,7 @@ const AudioCtx =
 const audioCtx = new AudioCtx();
 
 function playTone(freq: number, duration: number, type: OscillatorType = "sine", volume = 0.15) {
+  if (audioCtx.state === "closed") return;
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
   osc.type = type;
@@ -49,5 +50,7 @@ export function playShowdownSound() {
 }
 
 export function closeAudio() {
-  audioCtx.close();
+  if (audioCtx.state !== "closed") {
+    audioCtx.close();
+  }
 }
