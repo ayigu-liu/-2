@@ -111,10 +111,12 @@ type S2CTurnChange struct {
 }
 
 type S2CPlayerAction struct {
-	Type     string `json:"type"`
-	PlayerID int    `json:"player_id"`
-	Action   string `json:"action"`
-	Amount   *int   `json:"amount,omitempty"`
+	Type       string `json:"type"`
+	PlayerID   int    `json:"player_id"`
+	Action     string `json:"action"`
+	Amount     *int   `json:"amount,omitempty"`
+	Pot        int    `json:"pot"`
+	CurrentBet int    `json:"current_bet"`
 }
 
 type S2CPlayerLooked struct {

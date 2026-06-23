@@ -46,7 +46,7 @@ function routeMessage(msg: WSMessage, dispatch: React.Dispatch<GameAction>) {
       dispatch({ type: "TURN_CHANGE", playerId: msg.player_id, deadline: new Date(msg.action_deadline).getTime() });
       break;
     case "player_action":
-      dispatch({ type: "PLAYER_ACTION", playerId: msg.player_id, action: msg.action, amount: msg.amount, pot: msg.pot });
+      dispatch({ type: "PLAYER_ACTION", playerId: msg.player_id, action: msg.action, amount: msg.amount, pot: msg.pot, currentBet: msg.current_bet });
       break;
     case "player_looked":
       dispatch({ type: "PLAYER_LOOKED", playerId: msg.player_id });

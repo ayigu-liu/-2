@@ -134,6 +134,7 @@ export interface S2CPlayerAction {
   action: string;
   amount?: number;
   pot?: number;
+  current_bet?: number;
 }
 
 export interface S2CPlayerLooked {

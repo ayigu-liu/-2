@@ -127,3 +127,15 @@
   background-size: 200% 100%;
   animation: gold-shimmer 3s ease-in-out infinite;
 }
+
+/* ── Bet badge fly-in ── */
+@keyframes fly-bet {
+  0% { opacity: 0; transform: translateY(4px) scale(0.8); }
+  20% { opacity: 1; transform: translateY(0) scale(1); }
+  80% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-8px) scale(0.6); }
+}
+
+.animate-fly-bet {
+  animation: fly-bet 1.2s ease-out forwards;
+}

@@ -45,6 +45,7 @@ export interface GameState {
   mySeatIndex: number;
   gameOver: S2CGameOver | null;
   actionHistory: ActionLog[];
+  playerBets: Record<number, number>;
 }
 
 export type GameAction =
@@ -54,7 +55,7 @@ export type GameAction =
   | { type: "GAME_START"; currentTurn: number; pot: number; timeout: number }
   | { type: "YOUR_CARDS"; cards: Card[] }
   | { type: "TURN_CHANGE"; playerId: number; deadline: number }
-  | { type: "PLAYER_ACTION"; playerId: number; action: string; amount?: number; pot?: number }
+  | { type: "PLAYER_ACTION"; playerId: number; action: string; amount?: number; pot?: number; currentBet?: number }
   | { type: "PLAYER_LOOKED"; playerId: number }
   | { type: "COMPARE_RESULT"; challengerId: number; targetId: number; winnerId: number; loserCards: Card[]; loserHandType?: string }
   | { type: "PLAYER_ELIMINATED"; playerId: number }
@@ -103,6 +104,7 @@ export function createInitialState(userId: number): GameState {
     roundResult: null,
     gameOver: null,
     actionHistory: [],
+    playerBets: {},
   };
 }
 
@@ -138,6 +140,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         roundResult: null,
         actionHistory: [],
         gameOver: null,
+        playerBets: {},
       };
 
     case "YOUR_CARDS":
@@ -166,6 +169,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         pot: action.pot ?? state.pot,
+        currentBet: action.currentBet ?? state.currentBet,
+        playerBets: {
+          ...state.playerBets,
+          [action.playerId]: action.amount ?? 0,
+        },
         lastAction: {
           player_id: action.playerId,
           action: action.action,
